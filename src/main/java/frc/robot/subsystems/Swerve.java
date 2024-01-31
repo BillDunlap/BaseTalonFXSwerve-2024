@@ -22,6 +22,7 @@ public class Swerve extends SubsystemBase {
     public SwerveDriveOdometry swerveOdometry;
     public SwerveModule[] mSwerveMods;
     public Pigeon2 gyro;
+    // TODO: compare NavX and Pigeon 2.0 IMUs: private Gyro m_CompareGyro = new Gyro(false);
 
     public Swerve() {
         gyro = new Pigeon2(Constants.Swerve.pigeonID);
@@ -117,11 +118,16 @@ public class Swerve extends SubsystemBase {
     @Override
     public void periodic(){
         swerveOdometry.update(getGyroYaw(), getModulePositions());
+        Pose2d pose = swerveOdometry.getPoseMeters();
+        SmartDashboard.putNumber("X pos", pose.getX());
+        SmartDashboard.putNumber("Y pos", pose.getY());
 
         for(SwerveModule mod : mSwerveMods){
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " CANcoder", mod.getCANcoder().getDegrees());
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " Angle", mod.getPosition().angle.getDegrees());
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " Velocity", mod.getState().speedMetersPerSecond);    
+            SmartDashboard.putNumber("Mod" + mod.moduleNumber + " Drive Current", mod.getDriveCurrent());
+            SmartDashboard.putNumber("Mod" + mod.moduleNumber + " Angle Current", mod.getAngleCurrent());
         }
     }
 }
