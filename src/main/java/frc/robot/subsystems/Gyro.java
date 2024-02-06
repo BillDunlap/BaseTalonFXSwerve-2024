@@ -18,27 +18,37 @@ public class Gyro extends SubsystemBase {
   private Pigeon2 m_pigeon;
   private AHRS m_navX;
   private boolean m_usePigeon;
+  private double m_yawOffsetPigeon2;
+  private double m_yawOffsetNavX;
 
   public Gyro(boolean usePigeon) {
     m_pigeon = new Pigeon2(Constants.Swerve.pigeonID);
     m_pigeon.getConfigurator().apply(new Pigeon2Configuration()); // replaces .configFactoryDefault()
     m_navX = new AHRS(SPI.Port.kMXP);
+    calibrateNavX();
     // m_usePigeon = Constants.Swerve.usePigeon;
+    setYaw(0.0);
     m_usePigeon = usePigeon;
   }
 
-  public void setYaw(int pos){
-    m_pigeon.setYaw(pos);
-    setZeroAngleDegreesNavX(0.0);
-    m_navX.zeroYaw();
-    //navX.resetDisplacement(); //may break odometry on navX, idk :) we dont know why we need this, but dallion had it in his code
-  }
+  public void setYaw(double degreesCcw){
+    m_pigeon.reset();
+    m_navX.reset();
+    m_yawOffsetPigeon2 = degreesCcw;
+    m_yawOffsetNavX = degreesCcw + m_navX.getYaw();
+   }
 
+  private double getYawPigeon2() {
+    return m_pigeon.getYaw().getValueAsDouble() + m_yawOffsetPigeon2;
+  }
+  private double getYawNavX() {
+    return -m_navX.getYaw() + m_yawOffsetNavX;
+  }
   public double getYaw(){
     if (m_usePigeon) {
-      return m_pigeon.getYaw().getValueAsDouble();
+      return getYawPigeon2();
     } else {
-      return -m_navX.getYaw();
+      return getYawNavX();
     }
   }
   
@@ -62,9 +72,16 @@ public class Gyro extends SubsystemBase {
     m_usePigeon = !(m_usePigeon);
   }
 
-  private void setZeroAngleDegreesNavX (double degrees) {
+  /**
+   * Make sure gyro is done calibrating before using it
+   * @return
+   * true if calibration was successful, false if we could not connect to or could not calibrate NavX
+   */
+  private boolean calibrateNavX() {
+    // calibration only needed for NavX
     int nTries = 1;
-    while (m_navX.isCalibrating()) { //wait to zero yaw if calibration is still running
+    boolean retval = true;
+    while (m_navX.isCalibrating() && nTries<100) { //wait to zero yaw if calibration is still running
       try {
         Thread.sleep(20);
         System.out.println("----calibrating gyro---- " + nTries);
@@ -76,35 +93,40 @@ public class Gyro extends SubsystemBase {
         System.out.println("Having trouble calibrating NavX");
       }
     }
-    System.out.println("Setting angle adj to " + (-m_navX.getYaw()) + " + " + degrees + " after " + nTries + " attempts");
-    m_navX.setAngleAdjustment(-m_navX.getYaw() + degrees);
+    try {
+      Thread.sleep(60); // sometimes isConnected returns false immediately after calibration
+    } catch (InterruptedException e) {
+      // do nothing
+    }
+    if (m_navX.isCalibrating()) {
+      System.out.println("Could not calibrate NavX, will use Pigeon2");
+      retval = false;
+    } else if (!m_navX.isConnected()) {
+      System.out.println("NavX is not connected (is SPI dip switch not ON?), will use Pigeon2");
+      retval = false;
+    }
+    return retval;
   }
+ 
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    double navXYaw = -m_navX.getYaw();
+    double navXYaw = getYawNavX();
     var rawPigeonYaw = m_pigeon.getYaw();
-    double pigeonYaw = rawPigeonYaw.getValueAsDouble();
+    double pigeonYaw = getYawPigeon2();
     var pigeonStatus = rawPigeonYaw.getStatus();
     SmartDashboard.putNumber("Pigeon Yaw", pigeonYaw);
     SmartDashboard.putNumber("NavX Yaw", navXYaw);
-    SmartDashboard.putNumber("Gyro Differnce", Math.abs(pigeonYaw + navXYaw));
+    SmartDashboard.putNumber("Gyro Differnce", pigeonYaw - navXYaw);
 
-    var gyroError = m_pigeon.getFaultField();
+    var pigeonError = m_pigeon.getFaultField();
     SmartDashboard.putString("Pigeon Error Status", pigeonStatus.toString());
-    SmartDashboard.putString("Pigeon Fault Field", gyroError.toString());
+    SmartDashboard.putString("Pigeon Fault Field", pigeonError.toString());
     SmartDashboard.putString("rawPigeonYaw", rawPigeonYaw.toString());
 
     SmartDashboard.putBoolean("Using Pigeon?", m_usePigeon);
-
-    if (false) if (!gyroError.toString().equals("OK")) {
-      if (m_usePigeon) {
-        System.out.println("Pigeon Error: defaulting back to navX");
-      }
-      m_usePigeon = false;
-      //System.out.println(gyroError.toString());
-    }
+    SmartDashboard.putBoolean("NavX isConnected", m_navX.isConnected());
   }
-}
 
+}
