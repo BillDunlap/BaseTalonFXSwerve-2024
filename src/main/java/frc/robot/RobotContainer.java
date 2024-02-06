@@ -21,6 +21,8 @@ public class RobotContainer {
     /* Controllers */
     private final Joystick driver = new Joystick(0);
 
+    private final Gyro m_gyro = new Gyro(false);
+
     /* Drive Controls */
     private final int translationAxis = XboxController.Axis.kLeftY.value;
     private final int strafeAxis = XboxController.Axis.kLeftX.value;
@@ -59,6 +61,13 @@ public class RobotContainer {
     private void configureButtonBindings() {
         /* Driver Buttons */
         zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroHeading()));
+        // Experimental: test setYaw
+        JoystickButton xButton = new JoystickButton(driver, XboxController.Button.kX.value);
+        JoystickButton bButton = new JoystickButton(driver, XboxController.Button.kB.value);
+        JoystickButton aButton = new JoystickButton(driver, XboxController.Button.kA.value);
+        xButton.onTrue(new InstantCommand(() -> m_gyro.setYaw(-15.0)));
+        bButton.onTrue(new InstantCommand(() -> m_gyro.setYaw(20.0)));
+        aButton.onTrue(new InstantCommand(() -> m_gyro.setYaw(0.0)));
     }
 
     /**
