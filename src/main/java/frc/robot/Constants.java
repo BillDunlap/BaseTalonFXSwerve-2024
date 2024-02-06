@@ -62,13 +62,15 @@ public final class Constants {
         public static final double driveClosedLoopRamp = 0.0;
         /* Let's allow ramp control on angle motors as well.
          * "Ramp" is number of seconds between stopped and full speed */
-        public static final double angleOpenLoopRamp = 0.1;
-        public static final double angleClosedLoopRamp = 0.1;
+        public static final double angleOpenLoopRamp = 0;
+        public static final double angleClosedLoopRamp = .18; 
+          // increasing closedLoopRamp lowers peak current draw,
+          // but causes more oscillation in angle.
 
         /* Angle Motor PID Values */
-        public static final double angleKP = chosenModule.angleKP;
+        public static final double angleKP = chosenModule.angleKP * 0.5;
         public static final double angleKI = chosenModule.angleKI;
-        public static final double angleKD = chosenModule.angleKD;
+        public static final double angleKD = chosenModule.angleKD * 1.2;
 
         /* Drive Motor PID Values */
         public static final double driveKP = 0.12; //TODO: This must be tuned to specific robot
