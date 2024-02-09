@@ -13,6 +13,9 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
@@ -21,20 +24,26 @@ public class exampleAuto extends SequentialCommandGroup {
     public exampleAuto(Swerve s_Swerve){
         TrajectoryConfig config =
             new TrajectoryConfig(
-                    Constants.AutoConstants.kMaxSpeedMetersPerSecond,
-                    Constants.AutoConstants.kMaxAccelerationMetersPerSecondSquared)
+                    Constants.AutoConstants.kMaxSpeedMetersPerSecond / 3,
+                    Constants.AutoConstants.kMaxAccelerationMetersPerSecondSquared *1.5)
                 .setKinematics(Constants.Swerve.swerveKinematics);
 
         // An example trajectory to follow.  All units in meters.
         Trajectory exampleTrajectory =
             TrajectoryGenerator.generateTrajectory(
-                // Start at the origin facing the +X direction
-                new Pose2d(0, 0, new Rotation2d(0)),
-                // Pass through these two interior waypoints, making an 's' curve path
-                List.of(new Translation2d(1, 1), new Translation2d(2, -1)),
+                // Start from middle driver station facing the +X direction
+                new Pose2d(Units.feetToMeters(1), Units.feetToMeters(10), Rotation2d.fromDegrees(0)),
+                // Pass through these three interior waypoints, making an 's' curve path
+                List.of(new Translation2d(Units.feetToMeters(2), Units.feetToMeters(12)),
+                        new Translation2d(Units.feetToMeters(3), Units.feetToMeters(11)),
+                        new Translation2d(Units.feetToMeters(7), Units.feetToMeters(14))),
                 // End 3 meters straight ahead of where we started, facing forward
-                new Pose2d(3, 0, new Rotation2d(0)),
+                new Pose2d(Units.feetToMeters(10), Units.feetToMeters(10), Rotation2d.fromDegrees(0)),
                 config);
+        // visualize the trajectory
+        Field2d field = new Field2d();
+        SmartDashboard.putData(field);
+        field.getObject("traj").setTrajectory(exampleTrajectory);
 
         var thetaController =
             new ProfiledPIDController(
