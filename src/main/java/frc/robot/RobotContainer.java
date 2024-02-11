@@ -22,6 +22,7 @@ public class RobotContainer {
     private final Joystick driver = new Joystick(0);
 
     private final Gyro m_gyro = new Gyro(false);
+    private final OnOffSwitch m_collectorBeamBreak = new OnOffSwitch(0, true, "Note in collector");
 
     /* Drive Controls */
     private final int translationAxis = XboxController.Axis.kLeftY.value;
